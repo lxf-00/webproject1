@@ -18,11 +18,15 @@ from celery_tasks.activate import send_activating_mail                # 导入�
 # Create your views here.
 # 实现用户注册页面的视图：视图类
 
+# /user/register
 class RegisterView(View):
     """视图类---注册页面"""
 
     def get(self, request):
         # get -- 显示注册页面
+
+        # 如果客户已经登录
+
         return render(request, 'register.html')
 
     def post(self, request):
@@ -86,6 +90,7 @@ class RegisterView(View):
         return redirect(reverse('goods:index'))
 
 
+#/user/activate/token
 class ActivateView(View):
     """处理激活逻辑"""
     def get(self, request, token):
@@ -103,37 +108,62 @@ class ActivateView(View):
 
 
 
-
-
-
-
-
-
+# /user/login
 class LoginView(View):
     """"视图类--登录页面"""
 
     def get(self, request):
         # get方式显示登录页面
-        return redirect(reverse('goods:index'))
+
+        # 判断是否记住了用户名
+        if 'username' in request.COOKIES:
+            username = request.COOKIES.get('username')
+            checked = 'checked'
+        else:
+            username=''
+            checked=''
+
+        # 使用模板
+        return render(request, 'login.html', {'username':username, 'checked':'checked'})
 
     def post(self, request):
         # post方式执登录
         # 1， 接收数据
         username = request.POST.get("username")
-        password = request.POST.get("password")
+        password = request.POST.get("pwd")
 
         # 2, 校验数据
         # 检验数据完整性
         if not all([username, password]):
-            return render(request, 'login.html', {'errmsg': "数据不完整，请重新输入！"})
+
+            return render(request, 'login.html', {'errmsg':"数据不完整！"})
 
         # 3, 业务处理：登录
         # 校验用户名和密码是否正确
         user = authenticate(username=username, password=password)
 
-        if user:
-            # 代表user不为None,用户名和密码争取
-            return HttpResponse("欢迎登录！")
+        if user is not None:
+            # 代表user不为None,用户名和密码正确
+            # 判断是否为激活账户
+            if user.is_active:
+                #  代表是激活账户
+                response = HttpResponse("欢迎登录！")    # 实例化一个HttpResponse对象，进行cookies设置
+
+                # 判断用户是否需要记住用户名
+                rem = request.POST.get("rem")
+
+                if rem == 'on':
+                    # 代表需要记住用户名
+                    print(username)
+                    username = response.set_cookie('username', username, max_age=7*24*3600)
+                else:
+                    response.delete_cookie('username')
+
+                return response
+
+            else:
+                return render(request, 'login.html', {'errmsg':'账户未激活，无法登录！'})
         else:
-            return render(request, 'login.html', {'errmsg':"密码或账号错误,请查证后在登录"})
+            print(username, password)
+            return render(request, 'login.html', {'errmsg':"用户名或密码错误"})
 
