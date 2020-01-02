@@ -139,3 +139,15 @@ EMAIL_HOST_USER = 'lxrtt111@163.com'
 EMAIL_HOST_PASSWORD = 'l4x5f6'
 # 收件人看到的发件人
 EMAIL_FROM = '天天生鲜<lxrtt111@163.com>'
+
+
+# Django的缓存配置（redis)
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://172.16.36.164:6379/5",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
