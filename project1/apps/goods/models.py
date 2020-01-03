@@ -8,14 +8,14 @@ class GoodsType(BaseModel):
     """商品类型模型类"""
     name = models.CharField(max_length=20, verbose_name='种类名称')
     logo = models.CharField(max_length=20, verbose_name='标识')
-    image = models.ImageField(upload_to='type', verbose_name='商品类型图片')
+    image = models.ImageField(upload_to='type', blank=True, verbose_name='商品类型图片')
 
     class Meta:
         db_table = 'p1_goods_type'
         verbose_name = '商品种类'
         verbose_name_plural = verbose_name
 
-    # 显示商品类型名称
+    # # 显示商品类型名称
     def __str__(self):
         return self.name
 
@@ -43,6 +43,9 @@ class GoodsSKU(BaseModel):
         verbose_name = '商品'
         verbose_name_plural = verbose_name
 
+    # def __str__(self):
+    #     return self.name
+
 
 class Goods(BaseModel):
     """商品SPU模型类 （standard product unite 标准产品单位）"""
@@ -55,6 +58,9 @@ class Goods(BaseModel):
         db_table = 'p1_goods_spu'
         verbose_name = '商品SPU'
         verbose_name_plural = verbose_name
+
+    # def __str__(self):
+    #     return self.name
 
 
 class GoodsImage(BaseModel):
@@ -78,6 +84,7 @@ class IndexGoodsBanner(BaseModel):
         db_table = 'p1_index_banner'
         verbose_name = '首页轮播商品'
         verbose_name_plural = verbose_name
+
 
 
 class IndexTypeGoodsBanner(BaseModel):

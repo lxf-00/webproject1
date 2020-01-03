@@ -97,9 +97,9 @@ DATABASES = {
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'zh-hans'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Shanghai'
 
 USE_I18N = True
 
@@ -117,7 +117,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]   # 静态文件路径配�
 
 # 富文本编辑器配置
 TINYMCE_DEFAULT_CONFIG = {
-    'theme': 'advance',
+    'theme': 'advanced',
     'width': 600,
     'height': 400,
 }
@@ -151,3 +151,21 @@ CACHES = {
         }
     }
 }
+
+
+# 配置session存储
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+
+# 配置登录url地址
+LOGIN_URL='/user/login'  # 用于login_required （/accounts/login?next=/user）
+
+
+# 设置Django的文件存储类
+DEFAULT_FILE_STORAGE='utils.fdfs.storage.FDFSStorage'
+
+# 设置fdfs使用的client.conf文件路径
+FDFS_CLIENT_CONF='./utils/fdfs/client.conf'
+
+# 设置fdfs存储服务器上nginx的IP和端口号
+FDFS_URL='http://172.16.36.164:8888/'
