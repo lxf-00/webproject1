@@ -242,7 +242,7 @@ class AddressView(LoginRequiredMinix, View):
         # 获取默认地址
         address = Address.objects.get_default_address(user=user)
 
-        return  render(request, 'user_center_site.html', {"address":address})
+        return  render(request, 'user_center_site.html', {"page":'address', "address":address})
 
     def post(self, request):
         # 进行地址更新

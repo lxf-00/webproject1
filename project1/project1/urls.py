@@ -20,7 +20,8 @@ urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),   # 配置项目
     url(r'^tinymce/', include('tinymce.urls')),  # 富文本编辑器
     url(r'^cart/', include('cart.urls', namespace='cart')),   # 包含cart应用中的urls
-    url(r'^', include('goods.urls', namespace='goods')),   # 包含goods应用中的urls
+
     url(r'^user/', include('user.urls', namespace='user')),   # 包含user应用中的urls
     url(r'^order/', include('order.urls', namespace='order')),   # 包含user应用中的urls
+    url(r'^', include('goods.urls', namespace='goods')),   # 包含goods应用中的urls
 ]
