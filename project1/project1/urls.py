@@ -18,6 +18,7 @@ from django.contrib import admin
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),   # 配置项目
+    url(r'^search$', include('haystack.urls')),  # 包含全文检索urls
     url(r'^tinymce/', include('tinymce.urls')),  # 富文本编辑器
     url(r'^cart/', include('cart.urls', namespace='cart')),   # 包含cart应用中的urls
 

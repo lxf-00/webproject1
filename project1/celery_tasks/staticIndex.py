@@ -51,6 +51,6 @@ def generic_static_index():
     static_index = temp.render(context)
 
     # 3, 生成首页对应静态文件
-    save_path = os.path.join(settings.BASE_DIR, 'static/index.html')
+    save_path = os.path.join(settings.BASE_DIR, 'static/index1.html')
     with open(save_path, 'w') as f:
         f.write(static_index)

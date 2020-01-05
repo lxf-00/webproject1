@@ -28,12 +28,7 @@
 				</div> 
 			</div>
 			<div class="total">总价：<em>16.80元</em></div>
-			<div class="operate_btn">
-				<a href="javascript:;" class="buy_btn">立即购买</a>
-				<a href="javascript:;" class="add_cart" id="add_cart">加入购物车</a>				
-			</div>
-		</div>
-        <div>
+            <div>
             <p>其他规格：</p>
             <ul>
                 {% for sku in same_spu_skus %}
@@ -41,6 +36,12 @@
                 {% endfor %}
             </ul>
         </div>
+			<div class="operate_btn">
+				<a href="javascript:;" class="buy_btn">立即购买</a>
+				<a href="javascript:;"  sku_id={{ sku.id }} class="add_cart" id="add_cart">加入购物车</a>
+			</div>
+		</div>
+
 	</div>
 
 	<div class="main_wrap clearfix">
@@ -71,7 +72,7 @@
 					<dd>{{ sku.goods.detail|safe }}</dd>
 				</dl>
 			</div>
-
+            {% csrf_token %}
             <div class="tab_content">
 				<dl>
                     {% for order in sku_orders %}
@@ -90,26 +91,114 @@
 {% endblock bottom %}
 
 {% block bottomfiles %}
+    <script type="text/javascript" src="{% static 'js/jquery-1.12.4.min.js' %}"></script>
+    <script type="text/javascript">
+    update_goods_amount()
+    // 计算商品的总价格
+    function update_goods_amount(){
+        // 获取商品的单价和数量
+        price = $('.show_pirze').children('em').text()
+        count = $('.num_show').val()
 
-	<script type="text/javascript" src="js/jquery-1.12.2.js"></script>
-	<script type="text/javascript">
-		var $add_x = $('#add_cart').offset().top;
-		var $add_y = $('#add_cart').offset().left;
+        // 计算商品的总价
+        price = parseFloat(price)
+        count = parseFloat(count)
 
-		var $to_x = $('#show_count').offset().top;
-		var $to_y = $('#show_count').offset().left;
+        amount = price * count
 
-		$(".add_jump").css({'left':$add_y+80,'top':$add_x+10,'display':'block'})
-		$('#add_cart').click(function(){
-			$(".add_jump").stop().animate({
-				'left': $to_y+7,
-				'top': $to_x+7},
-				"fast", function() {
-					$(".add_jump").fadeOut('fast',function(){
-						$('#show_count').html(2);
-					});
+        // 设置商品的总价
+        $('.total').children('em').text(amount.toFixed(2)+'元')
+    };
 
-			});
-		})
-	</script>
+    // 增加商品的数量
+    $('.add').click(function(){
+        // 获取商品的原有数目
+        count = $('.num_show').val()
+        // 加 1
+        count = parseFloat(count) + 1
+        // 重新设置商品的数目
+        $('.num_show').val(count)
+
+        // 更新商品的总价
+        update_goods_amount()
+    });
+
+    // 减少商品的数量
+    $('.minus').click(function(){
+        // 获取当前商品的数目
+        count = $('.num_show').val()
+        // 减一
+        count = parseFloat(count) - 1
+        // 判断商品数量是否小于等于0
+        if (count <= 0){
+            count = 1
+        }
+
+        // 重新设置商品数目
+        $('.num_show').val(count)
+
+        // 更新商品的总价
+        update_goods_amount()
+    });
+
+    // 手动输入商品数目
+    $('.num_show').blur(function(){
+        // 获取用户输入的数目
+        count = $(this).val()
+
+        // 校验是否合理
+        // 检测是否为数字值（isNaN, 不是返回True); 是否为空; 是否小于等于0
+        if (isNaN(count) || count.trim().length==0 || parseFloat(count) <= 0){
+            count = 1
+        }
+
+        // 重新设置商品数目
+        $('.num_show').val(count)
+
+        // 更新商品总价
+        update_goods_amount()
+    });
+
+    // 获取add_cart div元素左上角的坐标
+    var $add_x = $('#add_cart').offset().top;
+    var $add_y = $('#add_cart').offset().left;
+
+    // 获取show_count div元素左上角坐标
+    var $count_x = $('#show_count').offset().top;
+    var $count_y = $('#show_count').offset().left;
+
+    $('.add_cart').click(function() {
+        // 获取商品的id和数量
+        sku_id = $(this).attr('sku_id')
+
+        count = $('.num_show').val()
+        csrf = $('input[name="csrfmiddlewaretoken"]').val()
+
+        // 组织参数
+        params = {'sku_id': sku_id, 'count': count, 'csrfmiddlewaretoken':csrf}
+
+        // 发起ajax 请求
+        $.post('/cart/add', params, function(data){
+            if (data.res == 5){
+                // 添加成功
+                $(".add_jump").css({'left':$add_y+80,'top':$add_x+10,'display':'block'})
+                $('.add_jump').stop().animate({
+                    'left': $count_y+7,
+                    'top': $count_x+7},
+                    'fast', function (){
+                        $(".add_jump").fadeOut('fast',function(){
+                                // 重新设置用户购物车中商品的条目数
+                                $('#show_count').html(data.total_count);
+                            });
+                    });
+                }
+            else{
+                // 添加失败
+                alert(data.errmsg)
+            }
+        })
+    });
+
+    </script>
 {% endblock bottomfiles %}
+
