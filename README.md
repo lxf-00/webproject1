@@ -1,4 +1,4 @@
-# 电商网站： webproject1
+# 电商网站： 天天生鲜
 
 ## 模块及对应的版本：vesions
 - 主要 main models/frames:
@@ -30,6 +30,8 @@
   - 商品列表页的实现
     - django.core.paginator. Paginator 对数据进行分页；
 - 购物车模块
-  - ajax 实现添加购物车
+  - js: ajax 实现购物车商品数量的增加、减少、手动输入;
+  - js: ajax 实现购物车对应商品的删除
+
 
 - 全文搜索框架： django-haystact + whoosh + jieba (稍有不足)

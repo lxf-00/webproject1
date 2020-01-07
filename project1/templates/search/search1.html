@@ -5,6 +5,13 @@
     <title>Title</title>
 </head>
 <body>
-
+搜索的关键字:{{ query }}<br/>
+当前页的Page对象:{{ page }}<br/>
+<ul>
+    {% for item in page %}
+        <li>{{ item.object }}</li>
+    {% endfor %}
+</ul>
+分页paginator对象:{{ paginator }}<br/>
 </body>
 </html>
