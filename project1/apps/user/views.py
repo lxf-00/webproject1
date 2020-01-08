@@ -5,10 +5,11 @@ from django.views.generic import View            # 类视图
 from django.contrib.auth import authenticate, logout, login     # 用户信息校验, 注销, 记住登录状态
 from django.conf import settings
 from django_redis import get_redis_connection     # 导入django_redis实现用户浏览记录的缓存（需提前在setting中配置缓存设置）
+from django.core.paginator import Paginator       # 分页
 
 from user.models import User, Address
 from goods.models import GoodsSKU
-
+from order.models import OrderInfo, OrderGoods
 
 from itsdangerous import TimedJSONWebSignatureSerializer as Serial    # 用于用户身份信息加密
 from itsdangerous import SignatureExpired                             # 检测链接是否过期
@@ -179,7 +180,6 @@ class LogoutView(View):
     def get(self, request):
         # 退出登录，清除用户的session信息
         logout(request)
-        print(request)
 
         # 返回首页
         return redirect(reverse('goods:index'))
@@ -227,9 +227,67 @@ class UserInfoView(LoginRequiredMinix, View):
 
 # user/order
 class OrderView(LoginRequiredMinix, View):
-    def get(self, request):
+    def get(self, request, page):
+        # 获取登录用户
+        user = request.POST.get('user')
 
-        return  render(request, 'user_center_order.html', {'page':'order'})
+        # 获取相关信息
+        orders = OrderInfo.objects.filter(user=user)
+
+        # 遍历
+        for order in orders:
+            # 根据order_id 查询订单商品
+            order_skus = OrderGoods.objects.filter(order_id=order.order_id)
+
+            # 遍历order_skus 获取商品小计
+            for order_sku in order_skus:
+                # 计算小计
+                amount = order_sku.count * order_sku.price
+
+                # 动态给order_sku 增加amount属性，保存小计
+                order_sku.amount = amount
+
+            # 动态给order增加属性，保存订单商品信息
+            order.order_skus = order_skus
+
+        # 分页
+        paginator = Paginator(orders, 1)
+
+        # 获取该页的内容
+        try:
+            page = int(page)  # 将字符串类型的page转换为int
+        except Exception as e:
+            page = 1  # 报错显示第一页
+
+        if page > paginator.num_pages:
+            page = 1
+
+        # 获取第page页d的Page实例对象
+        order_page = paginator.page(page)
+
+        # 进行页码控制：页面上最多显示5个页码
+        # 1, 总页数小于5页，页面上显示所有页码
+        # 2, 如果当前页是前三页，显示1-5页
+        # 3, 如果当前页是后三页，显示后5页
+        # 4, 其他情况，显示当前页的前2页，当前页， 当前页后2页
+        num_pages = paginator.num_pages
+        if num_pages < 5:
+            pages = range(1, num_pages)
+        elif page <= 3:
+            pages = range(1, 6)
+        elif num_pages - page <= 2:
+            pages = range(num_pages - 4, num_pages + 1)
+        else:
+            pages = range(page - 2, page + 3)
+
+        # 组织上下文
+        context = {
+            'order_page': order_page,
+            'pages': pages,
+            'page': 'order'
+        }
+
+        return render(request, 'user_center_order.html', context)
 
 
 

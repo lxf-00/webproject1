@@ -12,7 +12,7 @@ urlpatterns = [
     url(r'^logout$', LogoutView.as_view(), name='logout'),               # 注销url
 
     url(r'^$', UserInfoView.as_view(), name='user_info'),                      # 用户中心
-    url(r'^order$', OrderView.as_view(), name='user_order'),    # 用户订单页面
+    url(r'^order/(?P<page>\d+)$', OrderView.as_view(), name='user_order'),    # 用户订单页面
     url(r'^addr$', AddressView.as_view(), name='user_addr'),    # 用户地址
 
 
