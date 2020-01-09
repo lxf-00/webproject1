@@ -229,10 +229,10 @@ class UserInfoView(LoginRequiredMinix, View):
 class OrderView(LoginRequiredMinix, View):
     def get(self, request, page):
         # 获取登录用户
-        user = request.POST.get('user')
+        user = request.user
 
         # 获取相关信息
-        orders = OrderInfo.objects.filter(user=user)
+        orders = OrderInfo.objects.filter(user=user).order_by('-creat_time')
 
         # 遍历
         for order in orders:
@@ -249,6 +249,7 @@ class OrderView(LoginRequiredMinix, View):
 
             # 动态给order增加属性，保存订单商品信息
             order.order_skus = order_skus
+            order.status_name = OrderInfo.ORDER_STATUS[order.order_status]
 
         # 分页
         paginator = Paginator(orders, 1)
@@ -270,7 +271,7 @@ class OrderView(LoginRequiredMinix, View):
         # 2, 如果当前页是前三页，显示1-5页
         # 3, 如果当前页是后三页，显示后5页
         # 4, 其他情况，显示当前页的前2页，当前页， 当前页后2页
-        num_pages = paginator.num_pages
+        num_pages = paginator.num_pages + 1
         if num_pages < 5:
             pages = range(1, num_pages)
         elif page <= 3:
@@ -279,6 +280,7 @@ class OrderView(LoginRequiredMinix, View):
             pages = range(num_pages - 4, num_pages + 1)
         else:
             pages = range(page - 2, page + 3)
+
 
         # 组织上下文
         context = {

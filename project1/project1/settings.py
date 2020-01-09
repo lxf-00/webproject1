@@ -40,6 +40,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'user.templatetags',         # 过滤器
     'haystack',             # 全文搜索框架
     'tinymce',              # 富文本编辑器
     'cart',                 # 注册应用: cart

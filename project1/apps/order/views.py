@@ -4,6 +4,9 @@ from django.views.generic import View
 from django_redis import get_redis_connection
 from django.http import JsonResponse
 from django.db import transaction     # django 使用事务
+from django.conf import settings
+
+import os
 
 from goods.models import GoodsSKU
 from user.models import Address
@@ -12,6 +15,8 @@ from order.models import OrderInfo, OrderGoods
 from utils.mixin import  LoginRequiredMinix
 
 from datetime import datetime
+
+from alipay import AliPay
 # Create your views here.
 
 # /order/place
@@ -23,6 +28,7 @@ class OrderPlaceView(LoginRequiredMinix, View):
 
         # 获取参数sku_ids
         sku_ids = request.POST.getlist('sku_ids')
+
 
         # 校验数据
         if not sku_ids:
@@ -46,7 +52,6 @@ class OrderPlaceView(LoginRequiredMinix, View):
             count = conn.hget(cart_key, sku_id)
 
             # 计算商品的小计
-
             amount = sku.price * int(count)
 
             # 动态给sku增加属性
@@ -345,5 +350,205 @@ class OrderCommitView(View):
 
         # 返回应答
         return JsonResponse({'res': 5, 'message': '创建成功'})
+
+
+# /order/pay
+# 前段ajax post 提交：order_id(订单id)、
+class OrderPayView(View):
+    """订单支付"""
+    def post(self, request):
+        # 判断用户是否登录
+        user = request.user
+        if not user.is_authenticated():
+            return JsonResponse({'res': 0, 'errmsg': '请先登录'})
+
+        # 接收参数
+        order_id = request.POST.get('order_id')
+
+        # 校验参数
+        if not order_id:
+            return JsonResponse({'res': 1, 'errmsg': '无效的订单id'})
+
+        # 校验订单是否有效
+
+        try:
+            order = OrderInfo.objects.get(order_id=order_id,
+                                          user_id=user.id,
+                                          pay_method=3,
+                                          order_status=1)
+        except OrderInfo.DoesNotExist:
+            # 订单不存在
+            return JsonResponse({'res': 2, 'errmsg': '不存在该订单'})
+
+
+        # 业务处理： 使用python sdk 调用支付宝的支付接口
+        with open(os.path.join(settings.BASE_DIR, 'apps/order/app_private_key.pem')) as f:
+            app_private_key = f.read()
+
+        with open(os.path.join(settings.BASE_DIR, 'apps/order/alipay_public_key.pem')) as f:
+            alipay_public_key = f.read()
+
+        # 初始化
+        alipay = AliPay(
+            appid='2016102100731943', # 2016102100731943
+            app_notify_url=None,  # 默认回调url
+            app_private_key_string=app_private_key,
+            # 支付宝的公钥，验证支付宝回传消息使用，不是你自己的公钥,
+            alipay_public_key_string=alipay_public_key,
+            sign_type="RSA2",   # RSA 或者 RSA2
+            debug=True  # 默认False
+        )
+
+
+
+        # 电脑网站支付，需要跳转到https://openapi.alipay.com/gateway.do? + order_string
+        # 沙箱环境跳转： https://openapi.alipaydev.com/gateway.do? + order_string
+        total_pay = order.total_price + order.transit_price  # Decimal 不能被json 序列化
+        print('total_pay', total_pay)
+        print('order_id', order_id)
+        order_string = alipay.api_alipay_trade_page_pay(
+            out_trade_no=order_id,   # 订单id
+            total_amount=str(total_pay),  # 支付总金额
+            subject='天天生鲜%s' %order_id,
+            return_url=None,
+            notify_url=None  # 可选, 不填则使用默认notify url
+        )
+
+        # 返回应答
+        pay_url = "https://openapi.alipaydev.com/gateway.do?" + order_string
+        return JsonResponse({'res': 3, 'pay_url': pay_url})
+
+
+# /order/check
+# ajax post 传递的参数： order_id
+class OrderCheckView(View):
+    """支付结果查询"""
+    def post(self, request):
+        # 用户登录校验
+        user = request.user
+        if not user.is_authenticated():
+            return JsonResponse({'res': 0, 'errmsg': '请先登录！'})
+
+        # 接收参数
+        order_id = request.POST.get('order_id')
+
+        # 校验参数
+        if not order_id:
+            return JsonResponse({'res': 1, 'errmsg': '无效的订单id'})
+
+        # 校验订单是否有效
+
+        try:
+            order = OrderInfo.objects.get(order_id=order_id,
+                                          user_id=user.id,
+                                          pay_method=3,
+                                          order_status=1)
+        except OrderInfo.DoesNotExist:
+            # 订单不存在
+            return JsonResponse({'res': 2, 'errmsg': '不存在该订单'})
+
+
+        # 业务处理： 使用python sdk 调用支付宝的支付接口
+        with open(os.path.join(settings.BASE_DIR, 'apps/order/app_private_key.pem')) as f:
+            app_private_key = f.read()
+
+        with open(os.path.join(settings.BASE_DIR, 'apps/order/alipay_public_key.pem')) as f:
+            alipay_public_key = f.read()
+
+        # 初始化
+        alipay = AliPay(
+            appid='2016102100731943', # 2016102100731943
+            app_notify_url=None,  # 默认回调url
+            app_private_key_string=app_private_key,
+            # 支付宝的公钥，验证支付宝回传消息使用，不是你自己的公钥,
+            alipay_public_key_string=alipay_public_key,
+            sign_type="RSA2",   # RSA 或者 RSA2
+            debug=True  # 默认False
+        )
+
+        # 调用支付宝的交易查询接口
+        while True:
+            response = alipay.api_alipay_trade_query(order_id)
+
+            # response = {
+            #         "trade_no": "2017032121001004070200176844",
+            #         "code": "10000",
+            #         "invoice_amount": "20.00",
+            #         "open_id": "20880072506750308812798160715407",
+            #         "fund_bill_list": [
+            #           {
+            #             "amount": "20.00",
+            #             "fund_channel": "ALIPAYACCOUNT"
+            #           }
+            #         ],
+            #         "buyer_logon_id": "csq***@sandbox.com",
+            #         "send_pay_date": "2017-03-21 13:29:17",
+            #         "receipt_amount": "20.00",
+            #         "out_trade_no": "out_trade_no15",
+            #         "buyer_pay_amount": "20.00",
+            #         "buyer_user_id": "2088102169481075",
+            #         "msg": "Success",
+            #         "point_amount": "0.00",
+            #         "trade_status": "TRADE_SUCCESS",
+            #         "total_amount": "20.00"
+            #       }
+
+            code = response.get('code')
+            trade_status = response.get('trade_status')
+            if code == '10000' and trade_status == 'TRADE_SUCCESS':
+                # 代表支付成功
+                # 获取支付宝交易号
+                trade_no = response.get('trade_no')
+                # 更新订单状态
+                order.trade_no = trade_no
+                order.order_status = 4   # 待评价
+                order.save()
+                # 返回结果
+                return JsonResponse({'res': 3, 'errmsg': "支付成功"})
+            elif code == '40004' or (code == '10000' and trade_status == 'WAIT_BUYER_PAY'):
+                #  等待买家付款
+                import time
+                time.sleep(5)
+                continue
+
+            else:
+                # 支付出错
+                return JsonResponse({'res': 4, 'errmsg': '支付失败'})
+
+
+# /order/comment/order_id
+class OrderCommentView(LoginRequiredMinix, View):
+    def get(self, request, order_id):
+        user = request.user
+
+        # 校验数据
+        if not order_id:
+            return redirect(reverse('user:user_order'))
+        # 根据order_id 获取order_info
+        try:
+            order = OrderInfo.objects.get(order_id=order_id, user=user)
+        except OrderInfo.DoesNotExist:
+            return redirect(reverse('user:user_order'))
+
+        # 获取订单商品
+        order_skus = OrderGoods.objects.filter(order=order_id)
+
+        # 遍历获取商品小计
+        for order_sku in order_skus:
+            amount = order_sku.price * order_sku.count
+            # 动态增加属性
+            order_sku.amount = amount
+
+        # 给order 动态增加属性表示订单状态
+        order.status_name = OrderInfo.ORDER_STATUS[order.order_status]
+        # 动态增加属性，保存order_skus
+        order.order_skus = order_skus
+
+        # 返回应答
+        return render(request, 'order_comment.html', {'order': order})
+
+
+
+
 
 
