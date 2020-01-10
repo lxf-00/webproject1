@@ -37,7 +37,9 @@
   - 订单创建（使用mysql事务， 悲观锁，乐观锁解决并发问题）；
   - 订单的支付、支付确认： alipay 支付接口api的使用（沙箱）；订单状态的变更；
   - 订单评价页面的实现
+
+- 网站部署
+  - uwsgi 服务器的配置与负载均衡；
+  - nginx --> uwsgi ---> django  ---> mysql,redis,fastdfs,nginx; 使用nginx实现静态资源和动态资源的分别处理；
   
-
-
 - 全文搜索框架： django-haystact + whoosh + jieba (稍有不足)
