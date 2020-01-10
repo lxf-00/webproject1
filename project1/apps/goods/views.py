@@ -115,7 +115,7 @@ class DetailView(View):
 
             # 只保存用户5条最新的浏览记录
             conn.ltrim(history_key, 0, 4)
-
+        print(sku_order)
         # 组织上下文
         context = {
             'sku': sku,                              # 商品信息

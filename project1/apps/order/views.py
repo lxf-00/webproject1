@@ -548,6 +548,46 @@ class OrderCommentView(LoginRequiredMinix, View):
         return render(request, 'order_comment.html', {'order': order})
 
 
+    def post(self, request, order_id):
+        """处理评论内容"""
+        user = request.user
+
+        # 校验数据
+        if not order_id:
+            return redirect(reverse('user:user_order'))
+
+        try:
+            order = OrderInfo.objects.get(order_id=order_id, user=user)
+        except OrderInfo.DoesNotExist:
+            return redirect(reverse("user:user_order"))
+
+        # 获取评论条数
+        total_count = request.POST.get('total_count')
+        total_count = int(total_count)
+
+        for i in range(1, total_count+1):
+            # 遍历获取评论商品的id
+            sku_id = request.POST.get('sku_%d'%i)
+
+            # 获取评论商品的内容
+            content = request.POST.get('content_%d'%i, '')
+
+            # 获取订单商品
+            try:
+                order_goods = OrderGoods.objects.get(order=order,sku_id=sku_id)
+            except OrderGoods.DoesNotExist:
+                continue
+
+            order_goods.comment = content
+            order_goods.save()
+
+        order.order_status = 5 # 已完成
+        order.save()
+
+        return redirect(reverse('user:user_order', kwargs={'page': 1}))
+
+
+
 
 
 

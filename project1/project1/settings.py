@@ -26,9 +26,9 @@ sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 SECRET_KEY = 'vk@+lwc686*sazeohtunbd1$8i*6zov$6!x7!@5f+)+8gzphg_'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -115,6 +115,9 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]   # 静态文件路径配置
+
+# 指定静态文件收集路径
+STATIC_ROOT = '/var/www/webproject/static/'
 
 
 # 富文本编辑器配置
