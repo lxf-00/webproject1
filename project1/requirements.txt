@@ -33,7 +33,7 @@ Pillow==6.2.1
 py3Fdfs==2.2.0
 PyMySQL==0.9.3
 pytz==2019.3
-PyYAML==5.2
+PyYAML==5.4
 redis==2.10.6
 requests==2.22.0
 six==1.13.0
